@@ -1,0 +1,43 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:       #F4F6FB;
+  --surface:  #FFFFFF;
+  --surface2: #F0F3FA;
+  --border:   rgba(0,0,0,0.07);
+  --shadow:   0 2px 16px rgba(0,0,0,0.08);
+  --shadow-hover: 0 6px 28px rgba(0,0,0,0.13);
+  --text1:    #151524;
+  --text2:    #5A5A7A;
+  --text3:    #AAAACC;
+  --green:    #00B87A;
+  --yellow:   #F59E0B;
+  --orange:   #F97316;
+  --red:      #EF4444;
+  --blue:     #3B82F6;
+  --blue-bg:  #EFF6FF;
+  --radius:   18px;
+}
+
+html, body, #root {
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--text1);
+  font-family: -apple-system, 'Apple SD Gothic Neo', BlinkMacSystemFont,
+    'Segoe UI', Roboto, 'Noto Sans KR', sans-serif;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root { max-width: 1360px; margin: 0 auto; }
+button { cursor: pointer; border: none; background: none; font-family: inherit; color: inherit; }
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; }
+  50%       { opacity: 0.8; }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
