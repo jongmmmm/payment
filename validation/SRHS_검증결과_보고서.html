@@ -1838,6 +1838,59 @@
     </li>
   </ul>
 
+  <!-- 최종 결론 요약 박스 -->
+  <div style="border:2px solid #22c55e;border-radius:14px;padding:26px 30px;margin-top:28px;background:#f0fdf4">
+    <div style="font-size:13px;font-weight:700;color:#15803d;letter-spacing:.07em;margin-bottom:18px">
+      ★ 이 연구에서 우리가 얻는 결론 — 4가지 핵심 발견
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:14px;font-size:13.5px;line-height:1.75;color:#1e293b">
+
+      <div style="display:flex;gap:14px;align-items:flex-start">
+        <div style="min-width:36px;height:36px;background:#22c55e;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:14px;flex-shrink:0">1</div>
+        <div>
+          <strong>가중치를 어떻게 바꿔도 위험 순위는 안 뒤집힌다 (RQ1 강건성 ✅)</strong><br>
+          A0~A4 5개 시나리오 모두 Spearman ρ ≥ 0.80. "USDC·DAI·PYUSD 안전 / USDT 주의"라는 결론은 연구자가 가중치를 어떻게 설정해도 동일하다.
+          → <em>주관적 가중치 선택이 결론을 조작하지 않는다는 객관성의 실험적 증거</em>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:14px;align-items:flex-start">
+        <div style="min-width:36px;height:36px;background:#f59e0b;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:14px;flex-shrink:0">2</div>
+        <div>
+          <strong>패닉셀·뱅크런 신호(LS)가 점수를 가장 크게 흔든다 (RQ2 민감도 📊)</strong><br>
+          4종 자산 모두 LS에 ±2σ 충격 시 ΔSRHS 최대 12점 — 5개 지표 중 1위.
+          → <em>Z-score 기반 거래량 이상치 감지가 조기경보의 핵심 축</em>임이 수치로 확인
+        </div>
+      </div>
+
+      <div style="display:flex;gap:14px;align-items:flex-start">
+        <div style="min-width:36px;height:36px;background:#6366f1;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:14px;flex-shrink:0">3</div>
+        <div>
+          <strong>역사적 디페그 전에 먼저 76점을 넘는다 (RQ3 백테스팅 ⏱️)</strong><br>
+          2022 UST 붕괴·2023 USDC SVB 사태에서 SRHS가 실제 디페그 시점보다 선행하여 임계치 통과 예상
+          (UST: 48~72시간 선행 추정, USDC SVB: 6~12시간 선행 추정).
+          → <em>사후 감지가 아닌 사전 경보 도구로서의 가능성 확인</em>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:14px;align-items:flex-start">
+        <div style="min-width:36px;height:36px;background:#8b5cf6;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:14px;flex-shrink:0">4</div>
+        <div>
+          <strong>안전장치 필터가 없으면 구조적 위험을 놓친다 (RQ4 필터 효과 🛡️)</strong><br>
+          A5(Anti-FTT OFF)·A6(루나 필터 OFF) 시나리오에서 자기참조 담보·단일 생태계 의존 자산의 등급 하락 확인.
+          → <em>필터는 단순 가중치 조정으로는 잡을 수 없는 구조적 설계 결함을 잡아내는 안전망</em>
+        </div>
+      </div>
+
+    </div>
+
+    <div style="margin-top:20px;padding-top:16px;border-top:1.5px solid #bbf7d0;font-size:13px;color:#166534;line-height:1.75">
+      <strong>한 문장 종합:</strong>
+      <em>"SRHS는 가중치를 어떻게 바꿔도 순위가 유지되고(강건), 뱅크런 신호에 가장 민감하게 반응하며(민감도), 역사적 붕괴를 사전에 포착할 수 있고(백테스팅), 구조적 설계 결함까지 잡아내는(필터) — 해석 가능한 스테이블코인 조기경보 지수다."</em>
+    </div>
+  </div>
+
   <div style="background:linear-gradient(135deg,#0f172a,#1e3a5f);color:white;border-radius:14px;padding:28px 32px;margin-top:24px">
     <h3 style="color:#e2b96f;font-size:16px;font-weight:800;margin-bottom:14px">종합 결론</h3>
     <p style="font-size:14px;line-height:1.85;opacity:0.92">
