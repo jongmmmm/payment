@@ -5,6 +5,8 @@ import {
   srhsTotal, getGrade, scoreColor,
   CR_BASELINE,
 } from './scoring';
+import Pricing, { SubscriptionBadge, PremiumGate } from './Pricing.jsx';
+import { consumeCheckoutReturn } from './payment.js';
 import './index.css';
 
 const REFRESH_MS = 45_000;   // 45초 (CoinGecko 무료 rate limit 대응)
@@ -510,6 +512,19 @@ export default function App() {
     'Notification' in window ? Notification.permission : 'unsupported'
   );
   const [history, setHistory] = useState({});   // { sym: [srhs, ...] } 최대 30개
+  const [checkoutPlan, setCheckoutPlan] = useState(null);  // 결제 모달에 표시할 플랜
+
+  // 요금제 탭으로 이동하면서 결제 모달 열기
+  const openCheckout = (plan = 'pro') => {
+    setActiveTab('pricing');
+    setCheckoutPlan(plan);
+  };
+
+  // Stripe 결제 후 success URL 로 복귀했을 때 구독 활성화
+  useEffect(() => {
+    const sub = consumeCheckoutReturn();
+    if (sub) setActiveTab('pricing');
+  }, []);
 
   const volCache        = useRef({ data: null, ts: 0 });
   const notifiedSymbols = useRef(new Set());
@@ -646,6 +661,7 @@ export default function App() {
             { id: 'guide',     label: '지표 가이드' },
             { id: 'about',     label: '💡 서비스 소개' },
             { id: 'conclusion', label: '📋 결론' },
+            { id: 'pricing',   label: '💳 요금제' },
           ].map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
               padding: '7px 18px', borderRadius: 22, fontSize: 13, fontWeight: 700,
@@ -676,6 +692,7 @@ export default function App() {
               background: '#ECFDF5', color: 'var(--green)', border: '1.5px solid #6EE7B7',
             }}>🔔 알림 ON</span>
           )}
+          <SubscriptionBadge onClick={() => openCheckout('pro')} />
         </div>
 
         {/* 상태 */}
@@ -873,7 +890,9 @@ export default function App() {
                     </div>
                   ))}
                 </div>
-                <CompareTable results={results} />
+                <PremiumGate plan="pro" title="Pro 전용 — 코인 비교 분석" onUpgrade={() => openCheckout('pro')}>
+                  <CompareTable results={results} />
+                </PremiumGate>
               </>
             )}
           </>
@@ -1863,6 +1882,15 @@ export default function App() {
             </div>
 
           </div>
+        )}
+
+        {/* ── 요금제 탭 ─────────────────────────────────────────────────── */}
+        {activeTab === 'pricing' && (
+          <Pricing
+            checkoutPlan={checkoutPlan}
+            onCheckout={(plan) => setCheckoutPlan(plan)}
+            onCloseCheckout={() => setCheckoutPlan(null)}
+          />
         )}
 
       </div>

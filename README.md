@@ -112,8 +112,45 @@ API Rate-limit(429) 발생 시 8초 대기 후 자동 재시도합니다.
 
 ```
 src/
-├── App.jsx       # 전체 UI 및 대시보드 로직 (4개 탭)
+├── App.jsx       # 전체 UI 및 대시보드 로직 (5개 탭)
 ├── api.js        # CoinGecko / DeFiLlama API 호출
 ├── scoring.js    # SRHS 산식 및 등급 판정
+├── payment.js    # 결제·구독 로직 (Stripe 카드 / USDC·USDT 온체인)
+├── Pricing.jsx   # 요금제 탭 · 결제 모달 · 프리미엄 잠금 UI
 └── index.css     # CSS 변수 및 글로벌 스타일
 ```
+
+---
+
+## 💳 결제 시스템
+
+`💳 요금제` 탭에서 **Free / Pro / Enterprise** 플랜을 제공하며, 백엔드 없는
+정적 호스팅(GitHub Pages)에서 동작하도록 두 가지 결제 경로를 지원합니다.
+
+| 결제 수단 | 동작 방식 |
+|-----------|-----------|
+| **카드** | Stripe Payment Link 로 이동 → 결제 후 `?checkout=success` 로 복귀 시 구독 활성화 |
+| **크립토** | 지갑(MetaMask 등)에서 USDC/USDT(ERC-20)를 가맹점 주소로 직접 전송, 트랜잭션 영수증 확인 후 구독 활성화 |
+
+구독 상태는 `localStorage`(30일 유효)에 저장되며, Pro 전용 기능(코인 비교 분석 등)은
+구독 시 잠금이 해제됩니다.
+
+### 실제 결제를 받으려면 (config 교체)
+
+`src/payment.js` 상단의 값을 본인 것으로 교체하세요.
+
+```js
+// 1) 카드 — Stripe 대시보드 > Payment Links 에서 생성한 링크
+export const STRIPE_LINKS = { pro: 'https://buy.stripe.com/...' };
+//    링크의 결제 후 이동(success) URL 을 아래로 설정:
+//    https://sojo1211.github.io/SRHS-STABLECOIN-RISK-HEALTH-SCORE-/?checkout=success&plan=pro
+
+// 2) 크립토 — 결제를 수취할 가맹점 지갑 주소
+export const CRYPTO = { merchant: '0xYOUR_WALLET_ADDRESS', ... };
+```
+
+> ⚠️ **보안 안내** — 정적 사이트에는 서버가 없으므로 구독 권한이 브라우저
+> `localStorage` 에만 저장됩니다(데모/MVP 수준). 위·변조가 불가능한 정식
+> 권한 부여가 필요하면, Stripe **Webhook**(`checkout.session.completed`)과
+> 크립토 **온체인 결제 검증**을 처리하는 서버리스 함수(Vercel/Netlify/Cloudflare
+> Workers)를 추가하고, 그 결과로 발급한 토큰(JWT 등)으로 기능을 게이팅하세요.
