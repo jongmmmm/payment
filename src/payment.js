@@ -50,6 +50,24 @@ export const PRICING = {
     ],
     locked: [],
   },
+  lifetime: {
+    id: 'lifetime',
+    name: '영구 이용권',
+    priceKRW: 300000,
+    priceUSDC: 210,        // ≈ $210 1회
+    period: '영구',
+    oneTime: true,         // 1회 결제 · 만료 없음
+    tagline: '평생 한 번 결제',
+    accent: '#F59E0B',
+    badge: 'BEST',
+    features: [
+      'Pro의 모든 기능 영구 이용',
+      '월 구독료 없음 · 1회 결제',
+      '만료 없음 · 평생 사용',
+      '향후 추가 기능 무료 제공',
+    ],
+    locked: [],
+  },
   enterprise: {
     id: 'enterprise',
     name: 'Enterprise',
@@ -261,23 +279,29 @@ export function isPremium() {
   return !!sub && sub.plan && sub.plan !== 'free';
 }
 
+// lifetime(영구)은 모든 유료 기능을 영구 해제한다.
 export function hasPlan(plan) {
   const sub = getSubscription();
   if (!sub) return plan === 'free';
-  if (plan === 'pro')        return sub.plan === 'pro' || sub.plan === 'enterprise';
-  if (plan === 'enterprise') return sub.plan === 'enterprise';
+  if (plan === 'pro')        return ['pro', 'enterprise', 'lifetime'].includes(sub.plan);
+  if (plan === 'enterprise') return ['enterprise', 'lifetime'].includes(sub.plan);
   return true;
 }
 
-// 결제 완료 후 구독 활성화
-export function activateSubscription({ plan, method, ref, days = 30 }) {
+// 만료 없는 영구 구독 여부
+export function isLifetime(sub) {
+  return !!sub && sub.plan && sub.expiresAt == null;
+}
+
+// 결제 완료 후 구독 활성화. permanent=true 면 만료 없는 영구 이용권.
+export function activateSubscription({ plan, method, ref, days = 30, permanent = false }) {
   const now = Date.now();
   const sub = {
     plan,
     method,                       // 'card' | 'crypto'
     ref,                          // Stripe session id 또는 tx hash
     startedAt: now,
-    expiresAt: now + days * 24 * 60 * 60 * 1000,
+    expiresAt: permanent ? null : now + days * 24 * 60 * 60 * 1000,
   };
   localStorage.setItem(SUB_KEY, JSON.stringify(sub));
   window.dispatchEvent(new Event(SUB_EVENT));

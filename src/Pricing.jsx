@@ -12,6 +12,7 @@ import {
   cancelSubscription,
   useSubscription,
   daysLeft,
+  isLifetime,
   detectCardBrand,
   luhnValid,
   expiryValid,
@@ -134,12 +135,17 @@ export function SubscriptionBadge({ onClick }) {
       }}>✨ Pro 업그레이드</button>
     );
   }
+  const lifetime = isLifetime(sub);
   const left = daysLeft(sub);
+  const planLabel = sub.plan === 'lifetime' ? '영구'
+    : sub.plan === 'enterprise' ? 'Enterprise' : 'Pro';
   return (
-    <button onClick={onClick} title={`${left}일 남음`} style={{
+    <button onClick={onClick} title={lifetime ? '영구 이용권' : `${left}일 남음`} style={{
       padding: '7px 14px', borderRadius: 22, fontSize: 12, fontWeight: 800,
-      background: '#EEF2FF', color: '#4F46E5', border: '1.5px solid #C7D2FE',
-    }}>👑 {sub.plan === 'enterprise' ? 'Enterprise' : 'Pro'} · {left}일</button>
+      background: lifetime ? '#FEF3C7' : '#EEF2FF',
+      color: lifetime ? '#B45309' : '#4F46E5',
+      border: lifetime ? '1.5px solid #FCD34D' : '1.5px solid #C7D2FE',
+    }}>👑 {planLabel} · {lifetime ? '평생' : `${left}일`}</button>
   );
 }
 
@@ -147,7 +153,7 @@ export function SubscriptionBadge({ onClick }) {
 // 구독이 없으면 자식 위에 잠금 오버레이를 덮어 미리보기로 보여준다.
 export function PremiumGate({ plan = 'pro', title, onUpgrade, children }) {
   const sub = useSubscription();
-  const ok = sub && (sub.plan === plan || sub.plan === 'enterprise');
+  const ok = sub && (sub.plan === plan || sub.plan === 'enterprise' || sub.plan === 'lifetime');
   if (ok) return children;
   return (
     <div style={{ position: 'relative', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
@@ -186,6 +192,7 @@ function CheckoutModal({ plan, onClose }) {
 
   if (!tier) return null;
 
+  const permanent = !!tier.oneTime;   // 영구 이용권은 만료 없음
   const close = () => phase === 'sending' || phase === 'pending' ? null : onClose();
 
   // Stripe 가 설정돼 있으면 실제 결제 페이지로 리다이렉트
@@ -203,7 +210,7 @@ function CheckoutModal({ plan, onClose }) {
     try {
       setPhase('sending');
       const r = await processDemoCardPayment(card);
-      activateSubscription({ plan, method: 'card', ref: r.auth });
+      activateSubscription({ plan, method: 'card', ref: r.auth, permanent });
       setPhase('done');
       setMsg(`${r.brand || '카드'} •••• ${r.last4} 결제가 완료되었습니다. (데모)`);
     } catch (e) {
@@ -223,7 +230,7 @@ function CheckoutModal({ plan, onClose }) {
         return;
       }
       // 영수증이 확정(성공)되었거나 타임아웃(pending)이어도 결제는 제출됨 → 구독 활성화
-      activateSubscription({ plan, method: 'crypto', ref: txHash });
+      activateSubscription({ plan, method: 'crypto', ref: txHash, permanent });
       setPhase('done');
       setMsg(receipt ? '온체인 결제가 확정되었습니다!' : '결제가 제출되었습니다. 곧 확정됩니다.');
     } catch (e) {
@@ -261,7 +268,10 @@ function CheckoutModal({ plan, onClose }) {
             <button onClick={close} style={{ color: '#fff', fontSize: 20, opacity: 0.8, lineHeight: 1 }}>✕</button>
           </div>
           <div style={{ marginTop: 10, fontSize: 26, fontWeight: 900 }}>
-            ₩{won(tier.priceKRW)}<span style={{ fontSize: 13, fontWeight: 600, opacity: 0.85 }}> / {tier.period}</span>
+            ₩{won(tier.priceKRW)}
+            <span style={{ fontSize: 13, fontWeight: 600, opacity: 0.85 }}>
+              {permanent ? ' · 1회 결제 (평생)' : ` / ${tier.period}`}
+            </span>
             {tier.priceUSDC != null &&
               <span style={{ fontSize: 13, fontWeight: 600, opacity: 0.85 }}>  ·  ≈ {tier.priceUSDC} USDC</span>}
           </div>
@@ -346,7 +356,9 @@ function CheckoutModal({ plan, onClose }) {
                 </div>
               )}
               <div style={{ marginTop: 14, fontSize: 11, color: 'var(--text3)', textAlign: 'center', lineHeight: 1.5 }}>
-                구독은 결제일로부터 30일간 유효합니다 · 언제든 해지 가능
+                {permanent
+                  ? '1회 결제로 평생 이용 · 추가 비용 없음'
+                  : '구독은 결제일로부터 30일간 유효합니다 · 언제든 해지 가능'}
               </div>
             </>
           )}
@@ -369,7 +381,8 @@ const warnBox = {
 // ── 요금제 탭 본문 ─────────────────────────────────────────────────────────
 export default function Pricing({ checkoutPlan, onCheckout, onCloseCheckout }) {
   const sub = useSubscription();
-  const tiers = [PRICING.free, PRICING.pro, PRICING.enterprise];
+  const tiers = [PRICING.free, PRICING.pro, PRICING.lifetime, PRICING.enterprise];
+  const lifetime = isLifetime(sub);
 
   return (
     <div>
@@ -387,46 +400,49 @@ export default function Pricing({ checkoutPlan, onCheckout, onCloseCheckout }) {
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap',
         }}>
           <div style={{ fontSize: 13.5, color: '#3730A3', fontWeight: 700 }}>
-            👑 현재 <b>{sub.plan === 'enterprise' ? 'Enterprise' : 'Pro'}</b> 구독 중 ·
+            👑 현재 <b>{sub.plan === 'lifetime' ? '영구 이용권' : sub.plan === 'enterprise' ? 'Enterprise' : 'Pro'}</b>
+            {lifetime ? ' 보유' : ' 구독 중'} ·
             결제수단 {sub.method === 'crypto' ? '크립토' : '카드'} ·
-            {' '}{daysLeft(sub)}일 남음
+            {' '}{lifetime ? '평생 이용' : `${daysLeft(sub)}일 남음`}
           </div>
           <button onClick={() => cancelSubscription()} style={{
             padding: '7px 14px', borderRadius: 20, fontSize: 12, fontWeight: 700,
             background: '#fff', color: 'var(--red)', border: '1.5px solid #FECACA',
-          }}>구독 해지</button>
+          }}>{lifetime ? '해제' : '구독 해지'}</button>
         </div>
       )}
 
       <div style={{
-        display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-        gap: 18, maxWidth: 980, margin: '0 auto',
+        display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+        gap: 18, maxWidth: 1180, margin: '0 auto',
       }}>
         {tiers.map(tier => {
           const current = (sub?.plan || 'free') === tier.id;
           return (
             <div key={tier.id} style={{
               position: 'relative', background: 'var(--surface)', borderRadius: 'var(--radius)',
-              border: tier.popular ? '2px solid #6366F1' : '1px solid var(--border)',
-              boxShadow: tier.popular ? '0 12px 32px rgba(99,102,241,0.18)' : 'var(--shadow)',
+              border: tier.popular ? '2px solid #6366F1' : tier.badge ? `2px solid ${tier.accent}` : '1px solid var(--border)',
+              boxShadow: tier.popular ? '0 12px 32px rgba(99,102,241,0.18)'
+                : tier.badge ? '0 12px 32px rgba(245,158,11,0.18)' : 'var(--shadow)',
               padding: '26px 22px', display: 'flex', flexDirection: 'column',
             }}>
-              {tier.popular && (
+              {(tier.popular || tier.badge) && (
                 <div style={{
                   position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)',
-                  background: 'linear-gradient(135deg, #6366F1, #8B5CF6)', color: '#fff',
-                  fontSize: 11, fontWeight: 800, padding: '4px 14px', borderRadius: 20,
-                }}>인기</div>
+                  background: tier.popular ? 'linear-gradient(135deg, #6366F1, #8B5CF6)'
+                    : 'linear-gradient(135deg, #F59E0B, #F97316)',
+                  color: '#fff', fontSize: 11, fontWeight: 800, padding: '4px 14px', borderRadius: 20, whiteSpace: 'nowrap',
+                }}>{tier.popular ? '인기' : tier.badge}</div>
               )}
               <div style={{ fontSize: 13, fontWeight: 800, color: tier.accent }}>{tier.name}</div>
               <div style={{ fontSize: 12.5, color: 'var(--text3)', marginTop: 2 }}>{tier.tagline}</div>
               <div style={{ margin: '14px 0 4px', fontSize: 30, fontWeight: 900, color: 'var(--text1)' }}>
                 {tier.priceKRW == null ? '문의'
                   : tier.priceKRW === 0 ? '무료'
-                  : <>₩{won(tier.priceKRW)}<span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text3)' }}> /{tier.period}</span></>}
+                  : <>₩{won(tier.priceKRW)}<span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text3)' }}>{tier.oneTime ? ' · 1회' : ` /${tier.period}`}</span></>}
               </div>
               {tier.priceUSDC != null && tier.priceUSDC > 0 && (
-                <div style={{ fontSize: 12, color: 'var(--text3)' }}>≈ {tier.priceUSDC} USDC / {tier.period}</div>
+                <div style={{ fontSize: 12, color: 'var(--text3)' }}>≈ {tier.priceUSDC} USDC {tier.oneTime ? '· 1회' : `/ ${tier.period}`}</div>
               )}
 
               <ul style={{ listStyle: 'none', padding: 0, margin: '18px 0 22px', display: 'flex', flexDirection: 'column', gap: 9, flex: 1 }}>
@@ -450,10 +466,13 @@ export default function Pricing({ checkoutPlan, onCheckout, onCloseCheckout }) {
               ) : (
                 <button onClick={() => onCheckout(tier.id)} disabled={current} style={{
                   padding: '12px 0', borderRadius: 12, fontSize: 14, fontWeight: 800, color: '#fff',
-                  background: current ? '#A5B4FC' : 'linear-gradient(135deg, #4F46E5, #7C3AED)',
-                  boxShadow: current ? 'none' : '0 8px 20px rgba(79,70,229,0.3)',
+                  background: current ? '#CBD5E1'
+                    : tier.oneTime ? 'linear-gradient(135deg, #F59E0B, #F97316)'
+                    : 'linear-gradient(135deg, #4F46E5, #7C3AED)',
+                  boxShadow: current ? 'none'
+                    : tier.oneTime ? '0 8px 20px rgba(245,158,11,0.3)' : '0 8px 20px rgba(79,70,229,0.3)',
                   cursor: current ? 'default' : 'pointer',
-                }}>{current ? '구독 중' : '구독하기'}</button>
+                }}>{current ? '이용 중' : tier.oneTime ? '평생 이용권 구매' : '구독하기'}</button>
               )}
             </div>
           );
