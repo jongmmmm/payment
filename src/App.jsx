@@ -6,6 +6,7 @@ import {
   CR_BASELINE,
 } from './scoring';
 import Pricing, { SubscriptionBadge, PremiumGate } from './Pricing.jsx';
+import Publication from './Publication.jsx';
 import { consumeCheckoutReturn } from './payment.js';
 import './index.css';
 
@@ -661,6 +662,7 @@ export default function App() {
             { id: 'guide',     label: '지표 가이드' },
             { id: 'about',     label: '💡 서비스 소개' },
             { id: 'conclusion', label: '📋 결론' },
+            { id: 'publication', label: '📚 학회 발간' },
             { id: 'pricing',   label: '💳 요금제' },
           ].map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
@@ -1883,6 +1885,9 @@ export default function App() {
 
           </div>
         )}
+
+        {/* ── 학회 발간 탭 ──────────────────────────────────────────────── */}
+        {activeTab === 'publication' && <Publication />}
 
         {/* ── 요금제 탭 ─────────────────────────────────────────────────── */}
         {activeTab === 'pricing' && (
